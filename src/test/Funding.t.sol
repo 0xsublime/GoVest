@@ -6,9 +6,18 @@ import "../GoVest.sol";
 
 contract FundingTest is DSTest {
 
-    GoVest vesting;
+    FundAdmin public fundAdmin;
+    GoVest public vesting;
 
-    function setUp() public {}
+    address fireToken = 0x2033e559cdDFF6DD36ec204e3014FAA75a01052E;
+    uint256 totalTime = 10000;
+    uint256 offset = 1000;
+    uint256 startTime = block.timestamp + offset;
+
+    function setUp() public {
+        fundAdmin = new FundAdmin();
+        vesting = new GoVest(fireToken, startTime, totalTime, address(fundAdmin));
+    }
 
     function testFunding(uint256[] calldata seeds) public {
     }
@@ -16,4 +25,8 @@ contract FundingTest is DSTest {
     function testExample() public {
         assertTrue(true);
     }
+}
+
+contract FundAdmin {
+
 }
