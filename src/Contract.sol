@@ -56,19 +56,25 @@ contract VestedEscrow is ReentrancyGuard{
         stakeContract = stakeContract_;
     }
 
-    function setAdmin(address _admin) external {
-        require(msg.sender == admin, "!auth");
+    // ===================
+    // Admin functionality
+    // ===================
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "only admin");
+        _;
+    }
+
+    // TODO?: Make it a pull, so the new admin must accept?
+    function setAdmin(address _admin) external onlyAdmin() {
         admin = _admin;
     }
 
-    function setFundAdmin(address _fundadmin) external {
-        require(msg.sender == admin, "!auth");
+    function setFundAdmin(address _fundadmin) external onlyAdmin() {
         fundAdmin = _fundadmin;
     }
 
-    function addTokens(uint256 _amount) external returns(bool){
-        require(msg.sender == admin, "!auth");
-
+    function addTokens(uint256 _amount) external onlyAdmin() returns(bool) {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
         unallocatedSupply = unallocatedSupply + _amount;
         return true;
@@ -111,6 +117,10 @@ contract VestedEscrow is ReentrancyGuard{
         return total;
     }
 
+    // ==============
+    // External views
+    // ==============
+
     function vestedSupply() external view returns(uint256){
         return _totalVested();
     }
@@ -133,6 +143,10 @@ contract VestedEscrow is ReentrancyGuard{
         return initialLocked[_recipient] - vested;
     }
 
+    // ===========================
+    // External user functionality
+    // ===========================
+
     function claim(address _recipient) public nonReentrant{
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
         uint256 claimable = vested - totalClaimed[_recipient];
@@ -146,6 +160,10 @@ contract VestedEscrow is ReentrancyGuard{
     function claim() external{
         claim(msg.sender);
     }
+
+    // =======
+    // Helpers
+    // =======
 
     /**
      * @dev Returns the smallest of two numbers.
