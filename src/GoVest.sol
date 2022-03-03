@@ -79,12 +79,6 @@ contract GoVest is ReentrancyGuard{
         fundAdmin = _fundadmin;
     }
 
-    function addTokens(uint256 _amount) external onlyAdmin() returns(bool) {
-        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
-        unallocatedSupply = unallocatedSupply + _amount;
-        return true;
-    }
-
     // ==================================
     // Admin and fund admin functionality
     // ==================================
@@ -92,6 +86,12 @@ contract GoVest is ReentrancyGuard{
     function setStartTime(uint256 _startTime) external onlyEitherAdmin() {
         require(block.timestamp < startTime, "vesting has started");
         startTime = _startTime;
+    }
+
+    function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
+        unallocatedSupply = unallocatedSupply + _amount;
+        return true;
     }
 
     function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool){
