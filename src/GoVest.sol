@@ -106,8 +106,8 @@ contract GoVest is ReentrancyGuard{
             totalAmount += amount;
             emit Fund(_recipient[i], amount);
         }
-
         initialLockedSupply += totalAmount;
+        require(totalAmount <= unallocatedSupply, "not that many tokens available");
         unallocatedSupply -= totalAmount;
         return true;
     }
