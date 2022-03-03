@@ -11,6 +11,9 @@ Changes:
 - remove `claimAndStake`
 - remove SafeMath
 - inline MathUtils library
+- misc style fixes
+- allow editing start time
+- allow fund manager to deposit tokens
 */
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
