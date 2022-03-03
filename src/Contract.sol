@@ -64,6 +64,11 @@ contract VestedEscrow is ReentrancyGuard{
         require(msg.sender == admin, "only admin");
         _;
     }
+ 
+    modifier onlyEitherAdmin() {
+        require(msg.sender == fundAdmin || msg.sender == admin, "only admin or fundadmin");
+        _;
+    }
 
     // TODO?: Make it a pull, so the new admin must accept?
     function setAdmin(address _admin) external onlyAdmin() {
@@ -80,9 +85,16 @@ contract VestedEscrow is ReentrancyGuard{
         return true;
     }
 
-    function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant returns(bool){
-        require(msg.sender == fundAdmin || msg.sender == admin, "!auth");
+    // ==================================
+    // Admin and fund admin functionality
+    // ==================================
 
+    function setStartTime(uint256 _startTime) external onlyEitherAdmin() {
+        require(block.timestamp < startTime, "vesting has started");
+        startTime = _startTime;
+    }
+
+    function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool){
         uint256 totalAmount = 0;
         for(uint256 i = 0; i < _recipient.length; i++){
             uint256 amount = _amount[i];
