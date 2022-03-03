@@ -27,7 +27,6 @@ contract GoVest is ReentrancyGuard{
     IERC20 public rewardToken;
     address public admin;
     address public fundAdmin;
-    address public stakeContract;
 
     uint256 public startTime;
     uint256 public totalTime;
@@ -46,7 +45,6 @@ contract GoVest is ReentrancyGuard{
         address rewardToken_,
         uint256 starttime_,
         uint256 totalTime_,
-        address stakeContract_,
         address fundAdmin_
     ) {
         require(starttime_ >= block.timestamp,"start must be future");
@@ -56,7 +54,6 @@ contract GoVest is ReentrancyGuard{
         totalTime = totalTime_;
         admin = msg.sender;
         fundAdmin = fundAdmin_;
-        stakeContract = stakeContract_;
     }
 
     // ===================
