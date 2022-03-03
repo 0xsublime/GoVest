@@ -42,13 +42,16 @@ contract FundingTest is DSTest {
         uint256 totalAmount = 0;
         for (uint256 i; i < seeds.length; i++) {
             uint256 seed = seeds[i];
-            if ( overflow(totalAmount, seed) ||
+            // Using `i` guarantees no address collisions.
+            recipients[i] = address(bytes20(keccak256(abi.encode(seed, i))));
+            // Skip if the seed gives "bad" values, such as too big token amounts
+            // or address collissions.
+            if (overflow(totalAmount, seed) ||
                 totalAmount + seed > fireToken.balanceOf(fireTokenWhale)) {
                 continue;
             }
-            amounts[i]    = seed;
+            amounts[i] = seed;
             totalAmount += amounts[i];
-            recipients[i] = address(bytes20(keccak256(abi.encode(seed, 1))));
         }
         emit Amount(totalAmount);
         
@@ -71,6 +74,18 @@ contract FundingTest is DSTest {
 
         vesting.fund(recipients, amounts);
         cheat.stopPrank();
+
+        require(vesting.initialLockedSupply() == totalAmount);
+        for (uint i; i < seeds.length; i++) {
+            uint256 stored = vesting.initialLocked(recipients[i]);
+
+            emit Amount(stored);
+
+            emit Amount(amounts[i]);
+
+            require(stored == amounts[i]);
+        }
+        require(vesting.unallocatedSupply() == 0);
     }
 
     function testExample() public {
