@@ -87,24 +87,28 @@ contract GoVest is ReentrancyGuard{
         require(block.timestamp < startTime, "vesting has started");
         startTime = _startTime;
     }
-
+    
     function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
         unallocatedSupply = unallocatedSupply + _amount;
         return true;
     }
 
+    /**
+    Distribute funds in the contract to addresses.
+    @custom:requires the tokens in the contract exceed the total funds being allocated.
+     */
     function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool){
         uint256 totalAmount = 0;
         for(uint256 i = 0; i < _recipient.length; i++){
             uint256 amount = _amount[i];
-            initialLocked[_recipient[i]] = initialLocked[_recipient[i]] + amount;
-            totalAmount = totalAmount + amount;
-            emit Fund(_recipient[i],amount);
+            initialLocked[_recipient[i]] += amount;
+            totalAmount += amount;
+            emit Fund(_recipient[i], amount);
         }
 
-        initialLockedSupply = initialLockedSupply + totalAmount;
-        unallocatedSupply = unallocatedSupply - totalAmount;
+        initialLockedSupply += totalAmount;
+        unallocatedSupply -= totalAmount;
         return true;
     }
  
