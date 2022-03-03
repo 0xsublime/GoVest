@@ -27,7 +27,6 @@ contract VestedEscrow is ReentrancyGuard{
     address public stakeContract;
 
     uint256 public startTime;
-    uint256 public endTime;
     uint256 public totalTime;
     uint256 public initialLockedSupply;
     uint256 public unallocatedSupply;
@@ -43,17 +42,15 @@ contract VestedEscrow is ReentrancyGuard{
     constructor(
         address rewardToken_,
         uint256 starttime_,
-        uint256 endtime_,
+        uint256 totalTime_,
         address stakeContract_,
         address fundAdmin_
     ) {
         require(starttime_ >= block.timestamp,"start must be future");
-        require(endtime_ > starttime_,"end must be greater");
 
         rewardToken = IERC20(rewardToken_);
         startTime = starttime_;
-        endTime = endtime_;
-        totalTime = endTime - startTime; // TODO: Needs to update if startTime does? Create view with startTime + totalTime?
+        totalTime = totalTime_;
         admin = msg.sender;
         fundAdmin = fundAdmin_;
         stakeContract = stakeContract_;
