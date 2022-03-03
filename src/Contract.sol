@@ -108,27 +108,6 @@ contract VestedEscrow is ReentrancyGuard{
         return true;
     }
 
-    function _totalVestedOf(address _recipient, uint256 _time) internal view returns(uint256){
-        if(_time < startTime){
-            return 0;
-        }
-        uint256 locked = initialLocked[_recipient];
-        uint256 elapsed = _time - startTime;
-        uint256 total = min(locked * elapsed / totalTime, locked );
-        return total;
-    }
-
-    function _totalVested() internal view returns(uint256){
-        uint256 _time = block.timestamp;
-        if(_time < startTime){
-            return 0;
-        }
-        uint256 locked = initialLockedSupply;
-        uint256 elapsed = _time - startTime;
-        uint256 total = min(locked * elapsed / totalTime, locked );
-        return total;
-    }
-
     // ==============
     // External views
     // ==============
@@ -176,6 +155,27 @@ contract VestedEscrow is ReentrancyGuard{
     // =======
     // Helpers
     // =======
+
+    function _totalVestedOf(address _recipient, uint256 _time) internal view returns(uint256){
+        if(_time < startTime){
+            return 0;
+        }
+        uint256 locked = initialLocked[_recipient];
+        uint256 elapsed = _time - startTime;
+        uint256 total = min(locked * elapsed / totalTime, locked );
+        return total;
+    }
+
+    function _totalVested() internal view returns(uint256){
+        uint256 _time = block.timestamp;
+        if(_time < startTime){
+            return 0;
+        }
+        uint256 locked = initialLockedSupply;
+        uint256 elapsed = _time - startTime;
+        uint256 total = min(locked * elapsed / totalTime, locked );
+        return total;
+    }
 
     /**
      * @dev Returns the smallest of two numbers.
