@@ -54,8 +54,7 @@ contract FundingTest is DSTest {
             recipients[i] = seed2Address(seed, i);
             // Skip if the seed gives "bad" values, such as too big token amounts
             // or address collissions.
-            if (overflow(totalAmount, seed) ||
-                totalAmount + seed > fireToken.balanceOf(fireTokenWhale)) {
+            if (overflow(totalAmount, seed)) {
                 continue;
             }
             amounts[i] = seed;
@@ -69,6 +68,8 @@ contract FundingTest is DSTest {
         } else {
             funder = address(fundAdmin);
         }
+
+        fireToken.mint(fireTokenWhale, totalAmount);
 
         cheat.prank(fireTokenWhale);
         fireToken.transfer(funder, totalAmount);
