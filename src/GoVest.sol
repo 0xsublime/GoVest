@@ -37,7 +37,7 @@ contract GoVest is ReentrancyGuard {
     mapping(address => uint256) public totalClaimed;
 
     event Fund(address indexed recipient, uint256 reward);
-    event Claim(address indexed user, uint256 amount);
+    event Claim(address indexed user, address claimer, uint256 amount);
 
     constructor(
         address rewardToken_,
@@ -150,8 +150,7 @@ contract GoVest is ReentrancyGuard {
 
         totalClaimed[_recipient] += claimable;
         rewardToken.safeTransfer(_recipient, claimable);
-
-        emit Claim(msg.sender, claimable);
+        emit Claim(_recipient, msg.sender, claimable);
     }
 
     function claim() external{

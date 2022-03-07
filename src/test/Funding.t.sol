@@ -7,6 +7,9 @@ import "../GoVest.sol";
 
 contract FundingTest is DSTest {
 
+    // From GoVest contract
+    event Claim(address indexed user, address claimer, uint256 amount);
+
     FundAdmin public fundAdmin;
     GoVest public vesting;
 
