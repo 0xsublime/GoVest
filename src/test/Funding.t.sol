@@ -106,6 +106,29 @@ contract FundingTest is DSTest {
             vesting.claim(recipient);
         }
         cheat.warp(startTime);
+        for (uint256 i; i < seeds.length; i++) {
+            address recipient = seed2Address(seeds[i], i);
+
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(recipient, address(this), 0);
+            vesting.claim(recipient);
+        }
+        cheat.warp(startTime + totalTime / 2);
+        for (uint256 i; i < seeds.length; i++) {
+            address recipient = seed2Address(seeds[i], i);
+
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(recipient, address(this), seeds[i] / 2);
+            vesting.claim(recipient);
+        }
+        cheat.warp(startTime + totalTime);
+        for (uint256 i; i < seeds.length; i++) {
+            address recipient = seed2Address(seeds[i], i);
+
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(recipient, address(this), seeds[i] / 2 + seeds[i] % 2);
+            vesting.claim(recipient);
+        }
     }
 
     function testExample() public {
