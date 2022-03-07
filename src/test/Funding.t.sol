@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.8.10;
 
 import "./Cheat.sol";
 import "ds-test/test.sol";
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "../GoVest.sol";
+import "solmate/tokens/ERC20.sol";
 
 contract FundingTest is DSTest {
 
@@ -17,7 +18,7 @@ contract FundingTest is DSTest {
     Cheat cheat = (new Cheater()).getCheat();
 
     address fireTokenWhale = 0x5Ccb403182598e2bc3767eBc3987E7f4c511a5a8;
-    IERC20 fireToken = IERC20(0x2033e559cdDFF6DD36ec204e3014FAA75a01052E);
+    FireToken fireToken = new FireToken("Ceramic Token", "FIRE", 18);
     uint256 totalTime = 10000;
     uint256 offset = 1000;
     uint256 startTime = block.timestamp + offset;
@@ -97,8 +98,18 @@ contract FundingTest is DSTest {
     }
 }
 
-contract FundAdmin {
+contract FireToken is ERC20 {
 
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
+    ) ERC20(_name, _symbol, _decimals) {}
+
+    function mint(address recipient, uint256 amount) public {
+        _mint(recipient, amount);
+    }
 }
 
+contract FundAdmin {
 }
