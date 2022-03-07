@@ -98,6 +98,7 @@ contract GoVest is ReentrancyGuard {
     function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool){
         uint256 totalAmount = 0;
         for(uint256 i = 0; i < _recipient.length; i++){
+            require(_recipient[i] != address(0), "can't fund 0 address");
             uint256 amount = _amount[i];
             initialLocked[_recipient[i]] += amount;
             totalAmount += amount;
