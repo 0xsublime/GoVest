@@ -35,11 +35,15 @@ contract FundingTest is DSTest {
         cheat.label(address(cheat), "cheat");
     }
 
-    function overflow(uint256 x, uint256 y) public pure returns (bool) {
+    function overflow(uint256 x, uint256 y) internal pure returns (bool) {
         unchecked {
             return x + y < x;
         }
-}
+    }
+
+    function seed2Address(uint256 seed, uint256 salt) internal pure returns (address) {
+        return address(bytes20(keccak256(abi.encode(seed, salt))));
+    }
 
     function testFunding(uint256[] calldata seeds, bool choice) public {
         address[] memory recipients = new address[](seeds.length);
@@ -47,8 +51,7 @@ contract FundingTest is DSTest {
         uint256 totalAmount = 0;
         for (uint256 i; i < seeds.length; i++) {
             uint256 seed = seeds[i];
-            // Using `i` guarantees no address collisions.
-            recipients[i] = address(bytes20(keccak256(abi.encode(seed, i))));
+            recipients[i] = seed2Address(seed, i);
             // Skip if the seed gives "bad" values, such as too big token amounts
             // or address collissions.
             if (overflow(totalAmount, seed) ||
