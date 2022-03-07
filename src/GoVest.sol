@@ -21,7 +21,7 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
-contract GoVest is ReentrancyGuard{
+contract GoVest is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public rewardToken;
@@ -36,21 +36,19 @@ contract GoVest is ReentrancyGuard{
     mapping(address => uint256) public initialLocked;
     mapping(address => uint256) public totalClaimed;
 
-    address[] public extraRewards;
-
     event Fund(address indexed recipient, uint256 reward);
     event Claim(address indexed user, uint256 amount);
 
     constructor(
         address rewardToken_,
-        uint256 starttime_,
+        uint256 startTime_,
         uint256 totalTime_,
         address fundAdmin_
     ) {
-        require(starttime_ >= block.timestamp,"start must be future");
+        require(startTime_ >= block.timestamp,"start must be future");
 
         rewardToken = IERC20(rewardToken_);
-        startTime = starttime_;
+        startTime = startTime_;
         totalTime = totalTime_;
         admin = msg.sender;
         fundAdmin = fundAdmin_;
@@ -66,11 +64,10 @@ contract GoVest is ReentrancyGuard{
     }
  
     modifier onlyEitherAdmin() {
-        require(msg.sender == fundAdmin || msg.sender == admin, "only admin or fundadmin");
+        require(msg.sender == fundAdmin || msg.sender == admin, "only admin or fund admin");
         _;
     }
 
-    // TODO?: Make it a pull, so the new admin must accept?
     function setAdmin(address _admin) external onlyAdmin() {
         admin = _admin;
     }
@@ -90,7 +87,7 @@ contract GoVest is ReentrancyGuard{
     
     function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
-        unallocatedSupply = unallocatedSupply + _amount;
+        unallocatedSupply += _amount;
         return true;
     }
 
@@ -151,7 +148,7 @@ contract GoVest is ReentrancyGuard{
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
         uint256 claimable = vested - totalClaimed[_recipient];
 
-        totalClaimed[_recipient] = totalClaimed[_recipient] + claimable;
+        totalClaimed[_recipient] += claimable;
         rewardToken.safeTransfer(_recipient, claimable);
 
         emit Claim(msg.sender, claimable);
