@@ -96,8 +96,7 @@ contract FundingTest is DSTest {
         require(vesting.unallocatedSupply() == 0);
     }
 
-    function testClaim(uint256 _totalTime, uint256[] calldata seeds, bool choice) public {
-        uint256 initialTimestamp = block.timestamp;
+    function testClaim(uint256[] calldata seeds, bool choice) public {
         testFunding(seeds, choice);
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
@@ -106,8 +105,7 @@ contract FundingTest is DSTest {
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
         }
-        cheat.warp(initialTimestamp + _totalTime / 2);
-        cheat.warp(initialTimestamp + _totalTime);
+        cheat.warp(startTime);
     }
 
     function testExample() public {
