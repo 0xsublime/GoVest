@@ -54,13 +54,12 @@ contract FundingTest is DSTest {
             recipients[i] = seed2Address(seed, i);
             // Skip if the seed gives "bad" values, such as too big token amounts
             // or address collissions.
-            if (overflow(totalAmount, seed)) {
-                continue;
-            }
+            cheat.assume(!overflow(totalAmount, seed));
             amounts[i] = seed;
             totalAmount += amounts[i];
         }
-        emit Amount(totalAmount);
+        cheat.assume(totalAmount > 100_000);
+        cheat.assume(type(uint256).max / totalTime >= totalAmount);
         
         address funder;
         if (choice) {
