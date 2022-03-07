@@ -101,7 +101,7 @@ contract FundingTest is DSTest {
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
-            cheat.expectEmit(true, false, false, false);
+            cheat.expectEmit(true, false, false, true);
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
         }
