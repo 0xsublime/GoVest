@@ -36,6 +36,8 @@ contract GoVest is ReentrancyGuard {
     mapping(address => uint256) public initialLocked;
     mapping(address => uint256) public totalClaimed;
 
+    mapping(address => bool) public fundCancellable;
+
     event Fund(address indexed recipient, uint256 reward);
     event Claim(address indexed user, address claimer, uint256 amount);
 
@@ -83,6 +85,19 @@ contract GoVest is ReentrancyGuard {
     function setStartTime(uint256 _startTime) external onlyEitherAdmin() {
         require(block.timestamp < startTime, "vesting has started");
         startTime = _startTime;
+    }
+
+    /** Only for admins.
+    Can be invoked until start time.
+    @param _recipient the addresses to assign change status for.
+    @param _setTo `true` if the addresses should be cancellable, `false` if it should not be.
+    */
+    function setCancellable(address[] calldata _recipient, bool _setTo) external onlyEitherAdmin() {
+        require(block.timestamp < startTime, "vesting has started");
+        for (uint256 i; i < _recipient.length; i++) {
+            address recipient = _recipient[i];
+            fundCancellable[recipient] = _setTo;
+        }
     }
     
     function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
