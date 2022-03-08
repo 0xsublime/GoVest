@@ -35,6 +35,29 @@ contract FundingTest is DSTest {
         cheat.label(address(cheat), "cheat");
     }
 
+    // Cancelling
+
+    function testSetCancel(address[] calldata recipients, bool setTo) public {
+        for (uint256 i; i < recipients.length; i++) {
+            require(!vesting.fundCancellable(recipients[i]));
+        }
+        vesting.setCancellable(recipients, setTo);
+        for (uint256 i; i < recipients.length; i++) {
+            require(setTo == vesting.fundCancellable(recipients[i]));
+        }
+        vesting.setCancellable(recipients, !setTo);
+        for (uint256 i; i < recipients.length; i++) {
+            require(!setTo == vesting.fundCancellable(recipients[i]));
+        }
+        cheat.warp(startTime);
+        cheat.expectRevert("vesting has started");
+        vesting.setCancellable(recipients, !setTo);
+        cheat.expectRevert("vesting has started");
+        vesting.setCancellable(recipients, setTo);
+    }
+
+    // Helpers
+
     function overflow(uint256 x, uint256 y) internal pure returns (bool) {
         unchecked {
             return x + y < x;
