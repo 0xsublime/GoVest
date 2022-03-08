@@ -119,8 +119,11 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipients[i], address(this), 0);
             vesting.claim(recipients[i]);
+            cheat.prank(fundAdmin);
+            vesting.cancelStream(recipients[i]);
             require(fireToken.balanceOf(recipients[i]) == initialBal);
         }
+        require(fireToken.balanceOf(address(vesting)) == 0);
     }
 
     function checkCancel(address[] memory recipients) internal {
@@ -287,6 +290,8 @@ contract FundingTest is DSTest {
             vesting.claim(recipient);
             require(fireToken.balanceOf(recipient) == initialBal + seeds[i] / 2 + seeds[i] % 2);
         }
+
+        require(fireToken.balanceOf(address(vesting)) == 0);
     }
 
     function testExample() public {
