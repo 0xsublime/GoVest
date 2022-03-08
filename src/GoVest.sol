@@ -36,7 +36,7 @@ contract GoVest is ReentrancyGuard {
 
     mapping(address => uint256) public initialLocked;
     mapping(address => uint256) public totalClaimed;
-    mapping(address => uint256) public cancelled;
+    mapping(address => bool) public cancelled;
 
     mapping(address => bool) public cancellable;
 
@@ -114,7 +114,7 @@ contract GoVest is ReentrancyGuard {
         require(cancellable[_recipient], "can't cancel this address");
         claim(_recipient);
         uint256 remainingBalance = lockedOf(_recipient);
-        cancelled[_recipient] += remainingBalance;
+        cancelled[_recipient] = true;
         cancelledSupply += remainingBalance;
         rewardToken.safeTransfer(admin, remainingBalance);
     }
@@ -143,15 +143,21 @@ contract GoVest is ReentrancyGuard {
      minus any already claimed tokens.
      */
     function balanceOf(address _recipient) public view returns(uint256){
+        if (cancelled[_recipient]) {
+            return 0;
+        }
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        return vested - totalClaimed[_recipient] - cancelled[_recipient];
+        return vested - totalClaimed[_recipient];
     }
 
     /** The amount that the address has yet to claim, because it is not yet unlocked.
     */
     function lockedOf(address _recipient) public view returns(uint256){
+        if (cancelled[_recipient]) {
+            return 0;
+        }
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        return initialLocked[_recipient] - vested - cancelled[_recipient];
+        return initialLocked[_recipient] - vested;
     }
 
     // ===========================
