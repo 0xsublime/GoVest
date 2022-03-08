@@ -45,7 +45,7 @@ contract FundingTest is DSTest {
         return address(bytes20(keccak256(abi.encode(seed, salt))));
     }
 
-    function testFunding(uint256[] calldata seeds, bool choice) public {
+    function testFunding(uint256[] calldata seeds, bool choice) public returns (bool) {
         address[] memory recipients = new address[](seeds.length);
         uint256[] memory amounts    = new uint256[](seeds.length);
         uint256 totalAmount = 0;
@@ -54,12 +54,12 @@ contract FundingTest is DSTest {
             recipients[i] = seed2Address(seed, i);
             // Skip if the seed gives "bad" values, such as too big token amounts
             // or address collissions.
-            cheat.assume(!overflow(totalAmount, seed));
             amounts[i] = seed;
-            totalAmount += amounts[i];
+            if (overflow(totalAmount, amounts[i])) {
+                return false;
+            }
+            totalAmount = totalAmount + amounts[i];
         }
-        cheat.assume(totalAmount > 100_000);
-        cheat.assume(type(uint256).max / totalTime >= totalAmount);
         
         address funder;
         if (choice) {
@@ -78,10 +78,19 @@ contract FundingTest is DSTest {
         cheat.startPrank(funder);
         fireToken.approve(address(vesting), totalAmount);
 
+        bool failure = type(uint256).max / totalTime < totalAmount;
+        if (failure) {
+            cheat.expectRevert("overflow protection");
+        }
         vesting.addTokens(totalAmount);
 
+        if (failure) {
+            cheat.expectRevert("not that many tokens available");
+        }
         vesting.fund(recipients, amounts);
         cheat.stopPrank();
+
+        if (failure) return false;
 
         require(vesting.initialLockedSupply() == totalAmount);
         for (uint i; i < seeds.length; i++) {
@@ -94,10 +103,14 @@ contract FundingTest is DSTest {
             require(stored == amounts[i]);
         }
         require(vesting.unallocatedSupply() == 0);
+        return true;
     }
 
-    function testClaim(uint256[] calldata seeds, bool choice) public {
-        testFunding(seeds, choice);
+    function testClaim(uint256[] calldata seeds, address extraAddr, bool choice) public {
+        bool res = testFunding(seeds, choice);
+        if (!res) {
+            return;
+        }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
