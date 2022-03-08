@@ -42,6 +42,8 @@ contract FundingTest is DSTest {
         cheat.assume(addr != admin && addr != fundAdmin);
         cheat.expectRevert("only admin or fund admin");
         vesting.fund(new address[](0),new uint256[](0));
+        cheat.expectRevert("only admin or fund admin");
+        vesting.fundCancellable(new address[](0),new uint256[](0));
     }
     // Cancelling
 
