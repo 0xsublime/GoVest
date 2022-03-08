@@ -113,7 +113,7 @@ contract GoVest is ReentrancyGuard {
     function cancelStream(address _recipient) public onlyEitherAdmin() {
         require(cancellable[_recipient], "can't cancel this address");
         claim(_recipient);
-        uint256 remainingBalance = balanceOf(_recipient);
+        uint256 remainingBalance = lockedOf(_recipient);
         cancelled[_recipient] += remainingBalance;
         cancelledSupply += remainingBalance;
         rewardToken.safeTransfer(admin, remainingBalance);
@@ -135,11 +135,6 @@ contract GoVest is ReentrancyGuard {
         return _totalVestedOf(_recipient, block.timestamp);
     }
 
-    function lockedOf(address _recipient) external view returns(uint256){
-        uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        return initialLocked[_recipient] - vested - cancelled[_recipient];
-    }
-
     // ============
     // Public views
     // ============
@@ -150,6 +145,13 @@ contract GoVest is ReentrancyGuard {
     function balanceOf(address _recipient) public view returns(uint256){
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
         return vested - totalClaimed[_recipient] - cancelled[_recipient];
+    }
+
+    /** The amount that the address has yet to claim, because it is not yet unlocked.
+    */
+    function lockedOf(address _recipient) public view returns(uint256){
+        uint256 vested = _totalVestedOf(_recipient, block.timestamp);
+        return initialLocked[_recipient] - vested - cancelled[_recipient];
     }
 
     // ===========================

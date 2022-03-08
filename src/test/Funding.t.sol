@@ -100,16 +100,37 @@ contract FundingTest is DSTest {
         vesting.addTokens(totalAmount);
         vesting.fundCancellable(recipients, amounts);
 
-// Try making some, but not all, cancellable;
-
         cheat.warp(warp);
-        for (uint256 i; i < len; i++) {
-            vesting.cancelStream(recipients[i]);
-        }
         cheat.stopPrank();
 
+        checkCancel(recipients);
+
+        cheat.warp(type(uint80).max);
+        for (uint256 i; i < len; i++) {
+            uint256 initialBal = fireToken.balanceOf(recipients[i]);
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(recipients[i], address(this), 0);
+            vesting.claim(recipients[i]);
+            require(fireToken.balanceOf(recipients[i]) == initialBal);
+        }
     }
 
+    function checkCancel(address[] memory recipients) internal {
+        for (uint256 i; i < recipients.length; i++) {
+            uint256 initialBalAdmin = fireToken.balanceOf(admin);
+            uint256 initialBalUser = fireToken.balanceOf(recipients[i]);
+            uint256 claimable = vesting.balanceOf(recipients[i]);
+            uint256 locked = vesting.lockedOf(recipients[i]);
+            uint256 claimed = vesting.totalClaimed(recipients[i]);
+            require(claimed + claimable + locked == vesting.initialLocked(recipients[i]));
+
+            cheat.prank(fundAdmin);
+            vesting.cancelStream(recipients[i]);
+
+            require(fireToken.balanceOf(admin) == initialBalAdmin + locked);
+            require(fireToken.balanceOf(recipients[i]) == initialBalUser + claimable);
+        }
+    }
     // Helpers
 
     function overflow(uint256 x, uint256 y) internal pure returns (bool) {
@@ -122,7 +143,7 @@ contract FundingTest is DSTest {
         return address(bytes20(keccak256(abi.encode(seed, salt))));
     }
 
-    function testFunding(uint256[] calldata seeds, bool choice) public returns (bool) {
+    function testFunding(uint256[] memory seeds, bool choice) public returns (bool) {
         address[] memory recipients = new address[](seeds.length);
         uint256[] memory amounts    = new uint256[](seeds.length);
         uint256 totalAmount = 0;
