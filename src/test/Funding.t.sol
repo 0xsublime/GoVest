@@ -12,7 +12,8 @@ contract FundingTest is DSTest {
     // From GoVest contract
     event Claim(address indexed user, address claimer, uint256 amount);
 
-    FundAdmin public fundAdmin;
+    address public admin;
+    address public fundAdmin;
     GoVest public vesting;
 
     Cheat cheat = (new Cheater()).getCheat();
@@ -25,7 +26,9 @@ contract FundingTest is DSTest {
 
     event Amount(uint256 amount);
     function setUp() public {
-        fundAdmin = new FundAdmin();
+        admin = address(1337);
+        fundAdmin = address(new FundAdmin());
+        cheat.prank(admin);
         vesting = new GoVest(address(fireToken), startTime, totalTime, address(fundAdmin));
 
         cheat.label(address(fundAdmin), "fundAdmin");
@@ -35,25 +38,76 @@ contract FundingTest is DSTest {
         cheat.label(address(cheat), "cheat");
     }
 
+    function testAccessControl(address addr) public {
+        cheat.assume(addr != admin && addr != fundAdmin);
+        cheat.expectRevert("only admin or fund admin");
+        vesting.fund(new address[](0),new uint256[](0));
+    }
     // Cancelling
 
-    function testSetCancel(address[] calldata recipients, bool setTo) public {
-        for (uint256 i; i < recipients.length; i++) {
-            require(!vesting.fundCancellable(recipients[i]));
+    function testSetCancel(address[] memory recipients, uint256[] calldata _amounts) public {
+        cheat.assume(_amounts.length > 0);
+        uint256 len = recipients.length;
+        uint256[] memory amounts = new uint256[](len);
+        uint256 totalAmount;
+        for (uint256 i; i < len; i++) {
+            if (recipients[i] == address(0)) {
+                recipients[i] = address(bytes20(keccak256(abi.encode(i, "salty"))));
+            }
+            // Treat amounts as a circular buffer.
+            amounts[i] = _amounts[i % _amounts.length];
+            cheat.assume(!overflow(totalAmount, amounts[i]));
+            totalAmount += amounts[i];
         }
-        vesting.setCancellable(recipients, setTo);
+        cheat.assume(type(uint256).max / totalTime > totalAmount);
+
         for (uint256 i; i < recipients.length; i++) {
-            require(setTo == vesting.fundCancellable(recipients[i]));
+            require(!vesting.cancellable(recipients[i]));
         }
-        vesting.setCancellable(recipients, !setTo);
+        fireToken.mint(fundAdmin, totalAmount);
+        cheat.startPrank(fundAdmin);
+        fireToken.approve(address(vesting), totalAmount);
+        vesting.addTokens(totalAmount);
+        vesting.fundCancellable(recipients, amounts);
+        cheat.stopPrank();
         for (uint256 i; i < recipients.length; i++) {
-            require(!setTo == vesting.fundCancellable(recipients[i]));
+            require(vesting.cancellable(recipients[i]));
         }
-        cheat.warp(startTime);
-        cheat.expectRevert("vesting has started");
-        vesting.setCancellable(recipients, !setTo);
-        cheat.expectRevert("vesting has started");
-        vesting.setCancellable(recipients, setTo);
+    }
+
+    // NOTE: `claim` can fail if either the claimed amount or the current timestamp is huge
+
+    function testCancelStream(address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
+        cheat.assume(_amounts.length > 0);
+        uint256 len = recipients.length;
+        uint256[] memory amounts = new uint256[](len);
+        uint256 totalAmount;
+        for (uint256 i; i < len; i++) {
+            if (recipients[i] == address(0)) {
+                recipients[i] = address(bytes20(keccak256(abi.encode(i, "salty"))));
+            }
+            // Treat amounts as a circular buffer.
+            amounts[i] = _amounts[i % _amounts.length];
+            cheat.assume(!overflow(totalAmount, amounts[i]));
+            totalAmount += amounts[i];
+        }
+        cheat.assume(type(uint256).max / totalTime > totalAmount);
+
+        fireToken.mint(fundAdmin, totalAmount);
+
+        cheat.startPrank(fundAdmin);
+        fireToken.approve(address(vesting), totalAmount);
+        vesting.addTokens(totalAmount);
+        vesting.fundCancellable(recipients, amounts);
+
+// Try making some, but not all, cancellable;
+
+        cheat.warp(warp);
+        for (uint256 i; i < len; i++) {
+            vesting.cancelStream(recipients[i]);
+        }
+        cheat.stopPrank();
+
     }
 
     // Helpers
@@ -86,9 +140,9 @@ contract FundingTest is DSTest {
         
         address funder;
         if (choice) {
-            funder = address(this);
+            funder = admin;
         } else {
-            funder = address(fundAdmin);
+            funder = fundAdmin;
         }
 
         fireToken.mint(fireTokenWhale, totalAmount);
