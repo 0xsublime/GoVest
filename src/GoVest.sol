@@ -88,6 +88,7 @@ contract GoVest is ReentrancyGuard {
     function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
         unallocatedSupply += _amount;
+        require(type(uint256).max / totalTime >= initialLockedSupply + unallocatedSupply, "overflow protection");
         return true;
     }
 
@@ -105,7 +106,6 @@ contract GoVest is ReentrancyGuard {
             emit Fund(_recipient[i], amount);
         }
         initialLockedSupply += totalAmount;
-        require(type(uint256).max / totalTime >= initialLockedSupply, "oveflow protection");
         require(totalAmount <= unallocatedSupply, "not that many tokens available");
         unallocatedSupply -= totalAmount;
         return true;
