@@ -111,6 +111,11 @@ contract FundingTest is DSTest {
         if (!res) {
             return;
         }
+        if (vesting.initialLocked(extraAddr) == 0) {
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(extraAddr, address(this), 0);
+            vesting.claim(extraAddr);
+        }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
@@ -118,7 +123,13 @@ contract FundingTest is DSTest {
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
         }
+
         cheat.warp(startTime);
+        if (vesting.initialLocked(extraAddr) == 0) {
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(extraAddr, address(this), 0);
+            vesting.claim(extraAddr);
+        }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
@@ -126,7 +137,13 @@ contract FundingTest is DSTest {
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
         }
+
         cheat.warp(startTime + totalTime / 2);
+        if (vesting.initialLocked(extraAddr) == 0) {
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(extraAddr, address(this), 0);
+            vesting.claim(extraAddr);
+        }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
@@ -134,7 +151,13 @@ contract FundingTest is DSTest {
             emit Claim(recipient, address(this), seeds[i] / 2);
             vesting.claim(recipient);
         }
+
         cheat.warp(startTime + totalTime);
+        if (vesting.initialLocked(extraAddr) == 0) {
+            cheat.expectEmit(true, false, false, true);
+            emit Claim(extraAddr, address(this), 0);
+            vesting.claim(extraAddr);
+        }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
