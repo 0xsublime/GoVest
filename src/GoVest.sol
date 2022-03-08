@@ -38,7 +38,7 @@ contract GoVest is ReentrancyGuard {
     mapping(address => uint256) public totalClaimed;
     mapping(address => uint256) public cancelled;
 
-    mapping(address => bool) public fundCancellable;
+    mapping(address => bool) public cancellable;
 
     event Fund(address indexed recipient, uint256 reward);
     event Claim(address indexed user, address claimer, uint256 amount);
@@ -90,19 +90,6 @@ contract GoVest is ReentrancyGuard {
         startTime = _startTime;
     }
 
-    /** Only for admins.
-    Can be invoked until start time.
-    @param _recipient the addresses to assign change status for.
-    @param _setTo `true` if the addresses should be cancellable, `false` if it should not be.
-    */
-    function setCancellable(address[] calldata _recipient, bool _setTo) external onlyEitherAdmin() {
-        require(block.timestamp < startTime, "vesting has started");
-        for (uint256 i; i < _recipient.length; i++) {
-            address recipient = _recipient[i];
-            fundCancellable[recipient] = _setTo;
-        }
-    }
-    
     function addTokens(uint256 _amount) external onlyEitherAdmin() returns(bool) {
         rewardToken.safeTransferFrom(msg.sender, address(this), _amount);
         unallocatedSupply += _amount;
@@ -114,34 +101,23 @@ contract GoVest is ReentrancyGuard {
     Distribute funds in the contract to addresses.
     @custom:requires the tokens in the contract exceed the total funds being allocated.
      */
-    function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool){
-        uint256 totalAmount = 0;
-        for(uint256 i = 0; i < _recipient.length; i++){
-            require(_recipient[i] != address(0), "can't fund 0 address");
-            uint256 amount = _amount[i];
-            initialLocked[_recipient[i]] += amount;
-            totalAmount += amount;
-            emit Fund(_recipient[i], amount);
-        }
-        initialLockedSupply += totalAmount;
-        require(totalAmount <= unallocatedSupply, "not that many tokens available");
-        unallocatedSupply -= totalAmount;
-        return true;
+    function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool) {
+        return _fund(_recipient, _amount);
     }
- 
-    function cancelStream(address _recipient) public nonReentrant onlyEitherAdmin() {
-        require(fundCancellable[_recipient], "can't cancel this address");
+
+    function fundCancellable(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant onlyEitherAdmin() returns(bool) {
+        _setCancellable(_recipient, true);
+        return _fund(_recipient, _amount);
+    }
+
+    function cancelStream(address _recipient) public onlyEitherAdmin() {
+        require(cancellable[_recipient], "can't cancel this address");
         claim(_recipient);
         uint256 remainingBalance = balanceOf(_recipient);
         cancelled[_recipient] += remainingBalance;
         cancelledSupply += remainingBalance;
         rewardToken.safeTransfer(admin, remainingBalance);
     }
-
-    // TODO: Add functionality for vesting that can be revoked.
-    // Maintain a boolean mapping of vesting that can be clawed back.
-    // When they are clawed back, send the tokens back to admin, fund admin or other recipient.
-    // Any vested tokens will be sent to the recipient. 
 
     // ==============
     // External views
@@ -195,7 +171,34 @@ contract GoVest is ReentrancyGuard {
     // =======
     // Helpers
     // =======
+ 
+    function _fund(address[] calldata _recipient, uint256[] calldata _amount) internal returns(bool) {
+        uint256 totalAmount = 0;
+        for(uint256 i = 0; i < _recipient.length; i++){
+            require(_recipient[i] != address(0), "can't fund 0 address");
+            uint256 amount = _amount[i];
+            initialLocked[_recipient[i]] += amount;
+            totalAmount += amount;
+            emit Fund(_recipient[i], amount);
+        }
+        initialLockedSupply += totalAmount;
+        require(totalAmount <= unallocatedSupply, "not that many tokens available");
+        unallocatedSupply -= totalAmount;
+        return true;
+    }
 
+    /** Can only be invoked on accounts which have no allocated tokens.
+    @param _recipient the addresses to assign change status for.
+    @param _setTo `true` if the addresses should be cancellable, `false` if it should not be.
+    */
+    function _setCancellable(address[] calldata _recipient, bool _setTo) internal {
+        for (uint256 i; i < _recipient.length; i++) {
+            address recipient = _recipient[i];
+            require(initialLocked[recipient] == 0, "addres already funded");
+            cancellable[recipient] = _setTo;
+        }
+    }
+ 
     function _totalVestedOf(address _recipient, uint256 _time) internal view returns(uint256){
         if(_time < startTime){
             return 0;
