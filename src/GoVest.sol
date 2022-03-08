@@ -141,6 +141,8 @@ contract GoVest is ReentrancyGuard {
 
     /** The amount that the address can currently claim: its total vested tokens,
      minus any already claimed tokens.
+     If the address has had their vesting cancelled, they have no balance
+     remaining.
      */
     function balanceOf(address _recipient) public view returns(uint256){
         if (cancelled[_recipient]) {
@@ -150,7 +152,10 @@ contract GoVest is ReentrancyGuard {
         return vested - totalClaimed[_recipient];
     }
 
-    /** The amount that the address has yet to claim, because it is not yet unlocked.
+    /** The amount that the address has yet to claim, because it is not yet
+     unlocked.
+     If the address has had their vesting cancelled, they have no tokens waiting
+     to unlock.
     */
     function lockedOf(address _recipient) public view returns(uint256){
         if (cancelled[_recipient]) {
@@ -202,11 +207,14 @@ contract GoVest is ReentrancyGuard {
     function _setCancellable(address[] calldata _recipient, bool _setTo) internal {
         for (uint256 i; i < _recipient.length; i++) {
             address recipient = _recipient[i];
-            require(initialLocked[recipient] == 0, "addres already funded");
+            require(initialLocked[recipient] == 0, "address already funded");
             cancellable[recipient] = _setTo;
         }
     }
  
+    /** The amount that has been vested for the recipient up to the timestamp.
+    Includes any tokens already claimed.
+    */
     function _totalVestedOf(address _recipient, uint256 _time) internal view returns(uint256){
         if(_time < startTime){
             return 0;
