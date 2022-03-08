@@ -32,14 +32,17 @@ contract GoVest is ReentrancyGuard {
     uint256 public totalTime;
     uint256 public initialLockedSupply;
     uint256 public unallocatedSupply;
+    uint256 public cancelledSupply;
 
     mapping(address => uint256) public initialLocked;
     mapping(address => uint256) public totalClaimed;
+    mapping(address => uint256) public cancelled;
 
     mapping(address => bool) public fundCancellable;
 
     event Fund(address indexed recipient, uint256 reward);
     event Claim(address indexed user, address claimer, uint256 amount);
+    event Cancel(address indexed user, uint256 amount);
 
     constructor(
         address rewardToken_,
@@ -126,6 +129,15 @@ contract GoVest is ReentrancyGuard {
         return true;
     }
  
+    function cancelStream(address _recipient) public nonReentrant onlyEitherAdmin() {
+        require(fundCancellable[_recipient], "can't cancel this address");
+        claim(_recipient);
+        uint256 remainingBalance = balanceOf(_recipient);
+        cancelled[_recipient] += remainingBalance;
+        cancelledSupply += remainingBalance;
+        rewardToken.safeTransfer(admin, remainingBalance);
+    }
+
     // TODO: Add functionality for vesting that can be revoked.
     // Maintain a boolean mapping of vesting that can be clawed back.
     // When they are clawed back, send the tokens back to admin, fund admin or other recipient.
@@ -140,21 +152,28 @@ contract GoVest is ReentrancyGuard {
     }
 
     function lockedSupply() external view returns(uint256){
-        return initialLockedSupply - _totalVested();
+        return initialLockedSupply - _totalVested() - cancelledSupply;
     }
 
     function vestedOf(address _recipient) external view returns(uint256){
         return _totalVestedOf(_recipient, block.timestamp);
     }
 
-    function balanceOf(address _recipient) external view returns(uint256){
-        uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        return vested - totalClaimed[_recipient];
-    }
-
     function lockedOf(address _recipient) external view returns(uint256){
         uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        return initialLocked[_recipient] - vested;
+        return initialLocked[_recipient] - vested - cancelled[_recipient];
+    }
+
+    // ============
+    // Public views
+    // ============
+
+    /** The amount that the address can currently claim: its total vested tokens,
+     minus any already claimed tokens.
+     */
+    function balanceOf(address _recipient) public view returns(uint256){
+        uint256 vested = _totalVestedOf(_recipient, block.timestamp);
+        return vested - totalClaimed[_recipient] - cancelled[_recipient];
     }
 
     // ===========================
@@ -162,8 +181,7 @@ contract GoVest is ReentrancyGuard {
     // ===========================
 
     function claim(address _recipient) public nonReentrant{
-        uint256 vested = _totalVestedOf(_recipient, block.timestamp);
-        uint256 claimable = vested - totalClaimed[_recipient];
+        uint256 claimable = balanceOf(_recipient);
 
         totalClaimed[_recipient] += claimable;
         rewardToken.safeTransfer(_recipient, claimable);
