@@ -85,7 +85,14 @@ contract FundingTest is DSTest {
         require(vesting.cancelledSupply() == 0);
     }
 
-    // NOTE: `claim` can fail if either the claimed amount or the current timestamp is huge
+    function testCancelAndFundInterleave(
+        uint256[] calldata seed1, address extraAddr1, bool choice1,
+        uint256[] calldata seed2, address extraAddr2, bool choice2,
+        address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
+            testClaim(seed1, extraAddr1, choice1);
+            testCancelStream(recipients, _amounts, warp);
+            testClaim(seed2, extraAddr2, choice2);
+        }
 
     function testCancelStream(address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
         cheat.assume(_amounts.length > 0);
