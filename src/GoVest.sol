@@ -231,7 +231,7 @@ contract GoVest is ReentrancyGuard {
         if(_time < startTime){
             return 0;
         }
-        uint256 locked = initialLockedSupply;
+        uint256 locked = initialLockedSupply - cancelledSupply;
         uint256 elapsed = _time - startTime;
         uint256 total = min(locked * elapsed / totalTime, locked );
         return total;
