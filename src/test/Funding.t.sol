@@ -38,7 +38,6 @@ contract FundingTest is DSTest {
         cheat.label(address(fireTokenWhale), "FIRE Whale");
         cheat.label(address(cheat), "cheat");
     }
-
     function testAccessControl(address addr) public {
         cheat.assume(addr != admin && addr != fundAdmin);
         cheat.expectRevert("only admin or fund admin");
@@ -71,7 +70,7 @@ contract FundingTest is DSTest {
         cheat.assume(type(uint256).max / totalTime > totalAmount);
 
         for (uint256 i; i < recipients.length; i++) {
-            require(!vesting.cancellable(recipients[i]));
+            require(!vesting.cancellable(recipients[i]), "r1");
         }
         fireToken.mint(fundAdmin, totalAmount);
         cheat.startPrank(fundAdmin);
@@ -80,19 +79,22 @@ contract FundingTest is DSTest {
         vesting.fundCancellable(recipients, amounts);
         cheat.stopPrank();
         for (uint256 i; i < recipients.length; i++) {
-            require(vesting.cancellable(recipients[i]));
+            require(vesting.cancellable(recipients[i]), "r2");
         }
-        require(vesting.cancelledSupply() == 0);
+        require(vesting.cancelledSupply() == 0, "r3");
     }
 
+/*
+won't work due to all the time warping
     function testCancelAndFundInterleave(
-        uint256[] calldata seed1, address extraAddr1, bool choice1,
-        uint256[] calldata seed2, address extraAddr2, bool choice2,
+        uint128[] calldata seed1, address extraAddr1, bool choice1,
+        uint128[] calldata seed2, address extraAddr2, bool choice2,
         address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
-            testClaim(seed1, extraAddr1, choice1);
+            testFunding(seed1, choice1);
             testCancelStream(recipients, _amounts, warp);
             testClaim(seed2, extraAddr2, choice2);
         }
+*/
 
     function testCancelStream(address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
         cheat.assume(_amounts.length > 0);
@@ -117,7 +119,7 @@ contract FundingTest is DSTest {
         vesting.addTokens(totalAmount);
         vesting.fundCancellable(recipients, amounts);
 
-        cheat.warp(warp);
+        cheat.warp(startTime + warp);
         cheat.stopPrank();
 
         checkCancel(recipients);
@@ -130,9 +132,9 @@ contract FundingTest is DSTest {
             vesting.claim(recipients[i]);
             cheat.prank(fundAdmin);
             vesting.cancelStream(recipients[i]);
-            require(fireToken.balanceOf(recipients[i]) == initialBal);
+            require(fireToken.balanceOf(recipients[i]) == initialBal,"r4");
         }
-        require(fireToken.balanceOf(address(vesting)) == 0);
+        require(fireToken.balanceOf(address(vesting)) == 0,"r5");
     }
 
     function checkCancel(address[] memory recipients) internal {
@@ -143,15 +145,15 @@ contract FundingTest is DSTest {
             uint256 claimable = vesting.balanceOf(recipients[i]);
             uint256 locked = vesting.lockedOf(recipients[i]);
             uint256 claimed = vesting.totalClaimed(recipients[i]);
-            require(claimed + claimable + locked == vesting.initialLocked(recipients[i]));
+            require(claimed + claimable + locked == vesting.initialLocked(recipients[i]), "r6");
 
             cheat.prank(fundAdmin);
             vesting.cancelStream(recipients[i]);
 
-            require(fireToken.balanceOf(admin) == initialBalAdmin + locked);
-            require(vesting.cancelledSupply() == cancelled + locked);
+            require(fireToken.balanceOf(admin) == initialBalAdmin + locked, "r7");
+            require(vesting.cancelledSupply() == cancelled + locked,"r8");
             cancelled += locked;
-            require(fireToken.balanceOf(recipients[i]) == initialBalUser + claimable);
+            require(fireToken.balanceOf(recipients[i]) == initialBalUser + claimable,"r9");
         }
     }
     // Helpers
@@ -162,20 +164,21 @@ contract FundingTest is DSTest {
         }
     }
 
-    function seed2Address(uint256 seed, uint256 salt) internal pure returns (address) {
+    function seed2Address(uint128 seed, uint256 salt) internal pure returns (address) {
         return address(bytes20(keccak256(abi.encode(seed, salt))));
     }
 
-    function testFunding(uint256[] memory seeds, bool choice) public returns (bool) {
+    function testFunding(uint128[] memory seeds, bool choice) public returns (bool) {
+        uint256 initialLocked = vesting.initialLockedSupply();
         address[] memory recipients = new address[](seeds.length);
         uint256[] memory amounts    = new uint256[](seeds.length);
         uint256 totalAmount = 0;
         for (uint256 i; i < seeds.length; i++) {
-            uint256 seed = seeds[i];
+            uint128 seed = seeds[i];
             recipients[i] = seed2Address(seed, i);
             // Skip if the seed gives "bad" values, such as too big token amounts
             // or address collissions.
-            amounts[i] = seed;
+            amounts[i] = uint128(seed);
             if (overflow(totalAmount, amounts[i])) {
                 return false;
             }
@@ -210,7 +213,7 @@ contract FundingTest is DSTest {
 
         if (failure) return false;
 
-        require(vesting.initialLockedSupply() == totalAmount);
+        require(vesting.initialLockedSupply() == initialLocked + totalAmount, "r10");
         for (uint i; i < seeds.length; i++) {
             uint256 stored = vesting.initialLocked(recipients[i]);
 
@@ -218,13 +221,13 @@ contract FundingTest is DSTest {
 
             emit Amount(amounts[i]);
 
-            require(stored == amounts[i]);
+            require(stored == amounts[i], "r11");
         }
-        require(vesting.unallocatedSupply() == 0);
+        require(vesting.unallocatedSupply() == 0, "r12");
         return true;
     }
 
-    function testClaim(uint256[] calldata seeds, address extraAddr, bool choice) public {
+    function testClaim(uint128[] calldata seeds, address extraAddr, bool choice) public {
         bool res = testFunding(seeds, choice);
         if (!res) {
             return;
@@ -234,16 +237,17 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(extraAddr, address(this), 0);
             vesting.claim(extraAddr);
-            require(fireToken.balanceOf(extraAddr) == initialBal);
+            require(fireToken.balanceOf(extraAddr) == initialBal, "r13");
         }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
 
             uint256 initialBal = fireToken.balanceOf(recipient);
+            emit Amount(137);
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
-            require(fireToken.balanceOf(recipient) == initialBal);
+            require(fireToken.balanceOf(recipient) == initialBal, "r14");
         }
 
         cheat.warp(startTime);
@@ -252,7 +256,7 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(extraAddr, address(this), 0);
             vesting.claim(extraAddr);
-            require(fireToken.balanceOf(extraAddr) == initialBal);
+            require(fireToken.balanceOf(extraAddr) == initialBal, "r15");
         }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
@@ -261,7 +265,7 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipient, address(this), 0);
             vesting.claim(recipient);
-            require(fireToken.balanceOf(recipient) == initialBal);
+            require(fireToken.balanceOf(recipient) == initialBal, "r16");
         }
 
         cheat.warp(startTime + totalTime / 2);
@@ -270,7 +274,7 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(extraAddr, address(this), 0);
             vesting.claim(extraAddr);
-            require(fireToken.balanceOf(extraAddr) == initialBal);
+            require(fireToken.balanceOf(extraAddr) == initialBal, "r17");
         }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
@@ -279,7 +283,7 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipient, address(this), seeds[i] / 2);
             vesting.claim(recipient);
-            require(fireToken.balanceOf(recipient) == initialBal + seeds[i] / 2);
+            require(fireToken.balanceOf(recipient) == initialBal + seeds[i] / 2, "r19");
         }
 
         cheat.warp(startTime + totalTime);
@@ -288,7 +292,7 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(extraAddr, address(this), 0);
             vesting.claim(extraAddr);
-            require(fireToken.balanceOf(extraAddr) == initialBal);
+            require(fireToken.balanceOf(extraAddr) == initialBal, "r20");
         }
         for (uint256 i; i < seeds.length; i++) {
             address recipient = seed2Address(seeds[i], i);
@@ -297,10 +301,10 @@ contract FundingTest is DSTest {
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipient, address(this), seeds[i] / 2 + seeds[i] % 2);
             vesting.claim(recipient);
-            require(fireToken.balanceOf(recipient) == initialBal + seeds[i] / 2 + seeds[i] % 2);
+            require(fireToken.balanceOf(recipient) == initialBal + seeds[i] / 2 + seeds[i] % 2, "r21");
         }
 
-        require(fireToken.balanceOf(address(vesting)) == 0);
+        require(fireToken.balanceOf(address(vesting)) == 0, "r22");
     }
 
     function testExample() public {
