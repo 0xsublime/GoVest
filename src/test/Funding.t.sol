@@ -30,6 +30,7 @@ contract FundingTest is DSTest {
         fundAdmin = address(new FundAdmin());
         cheat.prank(admin);
         vesting = new GoVest(address(fireToken), startTime, totalTime, address(fundAdmin));
+        fireToken.mint(fireTokenWhale, 749_000_000e18);
 
         cheat.label(address(fundAdmin), "fundAdmin");
         cheat.label(address(vesting), "vesting contract");
@@ -44,9 +45,9 @@ contract FundingTest is DSTest {
         vesting.fund(new address[](0),new uint256[](0));
         cheat.expectRevert("only admin or fund admin");
         vesting.fundCancellable(new address[](0),new uint256[](0));
-        cheat.expectRevert("only admin or fund admin");
+        cheat.expectRevert("only admin");
         vesting.setAdmin(addr);
-        cheat.expectRevert("only admin or fund admin");
+        cheat.expectRevert("only admin");
         vesting.setFundAdmin(addr);
         cheat.expectRevert("only admin or fund admin");
         vesting.setStartTime(type(uint256).max);
@@ -81,6 +82,7 @@ contract FundingTest is DSTest {
         for (uint256 i; i < recipients.length; i++) {
             require(vesting.cancellable(recipients[i]));
         }
+        require(vesting.cancelledSupply() == 0);
     }
 
     // NOTE: `claim` can fail if either the claimed amount or the current timestamp is huge
@@ -127,6 +129,7 @@ contract FundingTest is DSTest {
     }
 
     function checkCancel(address[] memory recipients) internal {
+        uint256 cancelled = vesting.cancelledSupply();
         for (uint256 i; i < recipients.length; i++) {
             uint256 initialBalAdmin = fireToken.balanceOf(admin);
             uint256 initialBalUser = fireToken.balanceOf(recipients[i]);
@@ -139,6 +142,8 @@ contract FundingTest is DSTest {
             vesting.cancelStream(recipients[i]);
 
             require(fireToken.balanceOf(admin) == initialBalAdmin + locked);
+            require(vesting.cancelledSupply() == cancelled + locked);
+            cancelled += locked;
             require(fireToken.balanceOf(recipients[i]) == initialBalUser + claimable);
         }
     }
@@ -177,10 +182,7 @@ contract FundingTest is DSTest {
             funder = fundAdmin;
         }
 
-        fireToken.mint(fireTokenWhale, totalAmount);
-
-        cheat.prank(fireTokenWhale);
-        fireToken.transfer(funder, totalAmount);
+        fireToken.mint(funder, totalAmount);
 
         emit Amount(fireToken.balanceOf(funder));
 
