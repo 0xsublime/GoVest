@@ -186,6 +186,7 @@ contract GoVest is ReentrancyGuard {
     // =======
  
     function _fund(address[] calldata _recipient, uint256[] calldata _amount) internal returns(bool) {
+        require(_recipient.length == _amount.length, "arrays not same length");
         uint256 totalAmount = 0;
         for(uint256 i = 0; i < _recipient.length; i++){
             require(_recipient[i] != address(0), "can't fund 0 address");
