@@ -233,7 +233,7 @@ contract GoVest is ReentrancyGuard {
         }
         uint256 locked = initialLocked[_recipient];
         uint256 elapsed = _time - startTime;
-        uint256 total = min(locked * elapsed / totalTime, locked );
+        uint256 total = min(locked * elapsed / totalTime, locked);
         return total;
     }
 
