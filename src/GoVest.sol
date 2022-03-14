@@ -85,7 +85,7 @@ contract GoVest is ReentrancyGuard {
     // Admin and fund admin functionality
     // ==================================
 
-    function setStartTime(uint256 _startTime) external onlyEitherAdmin() {
+    function setStartTime(uint256 _startTime) external onlyAdmin() {
         require(block.timestamp < startTime, "vesting has started");
         startTime = _startTime;
     }
@@ -110,7 +110,7 @@ contract GoVest is ReentrancyGuard {
         return _fund(_recipient, _amount);
     }
 
-    function cancelStream(address _recipient) public onlyEitherAdmin() {
+    function cancelStream(address _recipient) public onlyAdmin() {
         require(cancellable[_recipient], "can't cancel this address");
         claim(_recipient);
         uint256 remainingBalance = lockedOf(_recipient);
