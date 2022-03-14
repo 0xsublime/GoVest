@@ -169,6 +169,10 @@ contract GoVest is ReentrancyGuard {
     // External user functionality
     // ===========================
 
+    /** Claim vested tokens for `_recipient`. Will send the tokens directly to the
+    `_recipient`. The `_recipient` must be an address with vested tokens.
+    @param _recipient the address for which vested tokens will be released and sent to.
+     */
     function claim(address _recipient) public nonReentrant {
         uint256 claimable = balanceOf(_recipient);
 
@@ -177,6 +181,9 @@ contract GoVest is ReentrancyGuard {
         emit Claim(_recipient, msg.sender, claimable);
     }
 
+    /** Claim vested tokens. Will send the tokens directly to the caller.
+    The caller must be an address with vested tokens.
+    */
     function claim() external {
         claim(msg.sender);
     }
