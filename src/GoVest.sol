@@ -135,6 +135,10 @@ contract GoVest is ReentrancyGuard {
         return _totalVestedOf(_recipient, block.timestamp);
     }
 
+    function endTime() external view returns(uint256) {
+        return startTime + totalTime;
+    }
+
     // ============
     // Public views
     // ============
