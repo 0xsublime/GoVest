@@ -169,7 +169,7 @@ contract GoVest is ReentrancyGuard {
     // External user functionality
     // ===========================
 
-    function claim(address _recipient) public nonReentrant{
+    function claim(address _recipient) public nonReentrant {
         uint256 claimable = balanceOf(_recipient);
 
         totalClaimed[_recipient] += claimable;
@@ -177,7 +177,7 @@ contract GoVest is ReentrancyGuard {
         emit Claim(_recipient, msg.sender, claimable);
     }
 
-    function claim() external{
+    function claim() external {
         claim(msg.sender);
     }
 
