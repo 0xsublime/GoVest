@@ -306,10 +306,6 @@ won't work due to all the time warping
 
         require(fireToken.balanceOf(address(vesting)) == 0, "r22");
     }
-
-    function testExample() public {
-        assertTrue(true);
-    }
 }
 
 contract FireToken is ERC20 {
