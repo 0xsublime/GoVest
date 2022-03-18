@@ -199,7 +199,7 @@ contract GoVest is ReentrancyGuard {
     function _fund(address[] calldata _recipient, uint256[] calldata _amount) internal returns(bool) {
         require(_recipient.length == _amount.length, "arrays not same length");
         uint256 totalAmount = 0;
-        for(uint256 i = 0; i < _recipient.length; i++){
+        for(uint256 i = 0; i < _recipient.length; ++i){
             require(_recipient[i] != address(0), "can't fund 0 address");
             uint256 amount = _amount[i];
             initialLocked[_recipient[i]] += amount;
@@ -217,7 +217,7 @@ contract GoVest is ReentrancyGuard {
     @param _setTo `true` if the addresses should be cancellable, `false` if it should not be.
     */
     function _setCancellable(address[] calldata _recipient, bool _setTo) internal {
-        for (uint256 i; i < _recipient.length; i++) {
+        for (uint256 i; i < _recipient.length; ++i) {
             address recipient = _recipient[i];
             require(initialLocked[recipient] == 0, "address already funded");
             cancellable[recipient] = _setTo;
