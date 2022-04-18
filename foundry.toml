@@ -8,4 +8,3 @@ remappings = ['ds-test/=lib/ds-test/src/']
 
 fuzz_runs=100000
 
-# See more config options https://github.com/gakonst/foundry/tree/master/config
