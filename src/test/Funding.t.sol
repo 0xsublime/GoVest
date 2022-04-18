@@ -48,7 +48,7 @@ contract FundingTest is DSTest {
         vesting.setAdmin(addr);
         cheat.expectRevert("only admin");
         vesting.setFundAdmin(addr);
-        cheat.expectRevert("only admin or fund admin");
+        cheat.expectRevert("only admin");
         vesting.setStartTime(type(uint256).max);
     }
     // Cancelling
@@ -130,7 +130,7 @@ won't work due to all the time warping
             cheat.expectEmit(true, false, false, true);
             emit Claim(recipients[i], address(this), 0);
             vesting.claim(recipients[i]);
-            cheat.prank(fundAdmin);
+            cheat.prank(admin);
             vesting.cancelStream(recipients[i]);
             require(fireToken.balanceOf(recipients[i]) == initialBal,"r4");
         }
@@ -147,7 +147,7 @@ won't work due to all the time warping
             uint256 claimed = vesting.totalClaimed(recipients[i]);
             require(claimed + claimable + locked == vesting.initialLocked(recipients[i]), "r6");
 
-            cheat.prank(fundAdmin);
+            cheat.prank(admin);
             vesting.cancelStream(recipients[i]);
 
             require(fireToken.balanceOf(admin) == initialBalAdmin + locked, "r7");
