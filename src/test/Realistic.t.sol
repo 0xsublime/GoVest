@@ -2,7 +2,7 @@
 
 /// Run this test with RPC.
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.13;
 
 import "./Cheat.sol";
 import "ds-test/test.sol";

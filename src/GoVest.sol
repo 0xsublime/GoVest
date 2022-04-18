@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.13;
 
 /*
 Based on Convex's VestedEscrow: https://github.com/convex-eth/platform/blob/main/contracts/contracts/VestedEscrow.sol
