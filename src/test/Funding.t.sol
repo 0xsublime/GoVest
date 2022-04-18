@@ -96,7 +96,7 @@ won't work due to all the time warping
         }
 */
 
-    function testCancelStream(address[] memory recipients, uint176[] calldata _amounts, uint80 warp) public {
+    function testCancelStream(address[] memory recipients, uint176[] calldata _amounts, uint48 warp) public {
         cheat.assume(_amounts.length > 0);
         uint256 len = recipients.length;
         uint256[] memory amounts = new uint256[](len);
