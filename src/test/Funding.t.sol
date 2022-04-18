@@ -145,15 +145,15 @@ won't work due to all the time warping
             uint256 claimable = vesting.balanceOf(recipients[i]);
             uint256 locked = vesting.lockedOf(recipients[i]);
             uint256 claimed = vesting.totalClaimed(recipients[i]);
-            require(claimed + claimable + locked == vesting.initialLocked(recipients[i]), "r6");
+            assertEq(claimed + claimable + locked, vesting.initialLocked(recipients[i]), "r6");
 
             cheat.prank(admin);
             vesting.cancelStream(recipients[i]);
 
-            require(fireToken.balanceOf(admin) == initialBalAdmin + locked, "r7");
-            require(vesting.cancelledSupply() == cancelled + locked,"r8");
+            assertEq(fireToken.balanceOf(admin), initialBalAdmin + locked, "r7");
+            assertEq(vesting.cancelledSupply(), cancelled + locked,"r8");
             cancelled += locked;
-            require(fireToken.balanceOf(recipients[i]) == initialBalUser + claimable,"r9");
+            assertEq(fireToken.balanceOf(recipients[i]), initialBalUser + claimable, "r9");
         }
     }
     // Helpers
