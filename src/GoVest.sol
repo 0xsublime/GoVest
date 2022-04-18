@@ -116,7 +116,6 @@ contract GoVest is ReentrancyGuard {
         uint256 remainingBalance = lockedOf(_recipient);
         cancelled[_recipient] = true;
         cancelledSupply += remainingBalance;
-        initialLocked[_recipient] -= remainingBalance;
         rewardToken.safeTransfer(admin, remainingBalance);
     }
 
