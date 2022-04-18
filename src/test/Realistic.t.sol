@@ -78,7 +78,7 @@ import "solmate/tokens/ERC20.sol";
         cheat.prank(employees[0]); // Cancelled.
         require(fireToken.balanceOf(employees[0]) == 0);
 
-        cheat.prank(fundAdmin);
+        cheat.prank(admin);
         vesting.cancelStream(employees[1]);
         require(fireToken.balanceOf(employees[1]) == employeeAllocations[1]/5);
         require(fireToken.balanceOf(admin) == employeeAllocations[0] + employeeAllocations[1] * 4 / 5);
