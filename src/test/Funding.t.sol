@@ -140,12 +140,15 @@ won't work due to all the time warping
     function checkCancel(address[] memory recipients) internal {
         uint256 cancelled = vesting.cancelledSupply();
         for (uint256 i; i < recipients.length; i++) {
+            cheat.assume(recipients[i] != address(vesting));
             uint256 initialBalAdmin = fireToken.balanceOf(admin);
             uint256 initialBalUser = fireToken.balanceOf(recipients[i]);
             uint256 claimable = vesting.balanceOf(recipients[i]);
             uint256 locked = vesting.lockedOf(recipients[i]);
             uint256 claimed = vesting.totalClaimed(recipients[i]);
-            assertEq(claimed + claimable + locked, vesting.initialLocked(recipients[i]), "r6");
+            if (!vesting.cancelled(recipients[i])) {
+                assertEq(claimed + claimable + locked, vesting.initialLocked(recipients[i]), "r6");
+            }
 
             cheat.prank(admin);
             vesting.cancelStream(recipients[i]);
